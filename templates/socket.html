@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Chat</title>
+      <script src="{{ url_for('static', path='ws.js') }}"></script>
+   </head>
+   <body>
+      <h1>WebSocket Chat</h1>
+      <form action="" onsubmit="sendMessage(event)">
+         <input type="text" id="messageText" autocomplete="off"/>
+         <button>Send</button>
+      </form>
+      <ul id="messages">
+      </ul>
+   </body>
+</html>
