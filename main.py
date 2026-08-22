@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from typing import List
 import JSON
 
-# Import your modules
+# Import modules
 from database import (
     engine, SessionLocal, Base,
     User, Ticket, TicketMessage, TicketSolution, AuditLog,
@@ -30,7 +30,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Set up templates and static files
+# Setting up templates and static files
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
