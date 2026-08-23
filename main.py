@@ -47,14 +47,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    acccess_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {
-        "access_token": access_token,
+        "access_token": access_token, 
         "token_type": "bearer",
-        "user_id" user.id,
-        "full_name": user.fullname,
+        "user_id": user.id,        # ← FIXED: Added colon here
+        "full_name": user.full_name,
         "role": user.role
     }
