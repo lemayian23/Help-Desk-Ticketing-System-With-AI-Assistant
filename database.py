@@ -45,7 +45,7 @@ class UserRole(str, enum.Enum):
 # User Model
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     full_name = Column(String(255), nullable=False)
@@ -56,7 +56,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     tickets_submitted = relationship("Ticket", foreign_keys="Ticket.submitted_by", back_populates="submitter")
     tickets_assigned = relationship("Ticket", foreign_keys="Ticket.assigned_to", back_populates="assignee")
@@ -66,7 +66,7 @@ class User(Base):
 # Ticket Model
 class Ticket(Base):
     __tablename__ = "tickets"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
@@ -78,7 +78,7 @@ class Ticket(Base):
     resolved_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     submitter = relationship("User", foreign_keys=[submitted_by], back_populates="tickets_submitted")
     assignee = relationship("User", foreign_keys=[assigned_to], back_populates="tickets_assigned")
@@ -88,14 +88,14 @@ class Ticket(Base):
 # Ticket Message (Comments)
 class TicketMessage(Base):
     __tablename__ = "ticket_messages"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     message = Column(Text, nullable=False)
-    is_internal = Column(Boolean, default=False)  # Internal notes for IT team
+    is_internal = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     ticket = relationship("Ticket", back_populates="messages")
     user = relationship("User", back_populates="messages")
@@ -103,29 +103,29 @@ class TicketMessage(Base):
 # AI Solutions Knowledge Base
 class TicketSolution(Base):
     __tablename__ = "ticket_solutions"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     ticket_id = Column(Integer, ForeignKey("tickets.id"), nullable=False)
     solution = Column(Text, nullable=False)
     used_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     ticket = relationship("Ticket", back_populates="solutions")
 
 # Audit Log for Compliance
 class AuditLog(Base):
     __tablename__ = "audit_logs"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    action = Column(String(100), nullable=False)  # created, updated, deleted, viewed, assigned
-    entity_type = Column(String(50), nullable=False)  # ticket, user, equipment
+    action = Column(String(100), nullable=False)
+    entity_type = Column(String(50), nullable=False)
     entity_id = Column(Integer, nullable=False)
-    details = Column(Text)  # JSON stored as text
+    details = Column(Text)
     ip_address = Column(String(45))
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     user = relationship("User", back_populates="audit_logs")
 
