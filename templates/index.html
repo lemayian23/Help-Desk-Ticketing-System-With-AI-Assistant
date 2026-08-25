@@ -6,271 +6,525 @@
     <title>IT Helpdesk System</title>
     <script src="{{ url_for('static', path='ws.js') }}"></script>
     <style>
-        /* All styles remain unchanged from the previous version */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2333;
+            --bg-card: #1c2333;
+            --bg-input: #0d1117;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #bc8cff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f4f8;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            margin: 0;
+            padding: 20px;
         }
+
         .container {
-            background: white;
-            border-radius: 12px;
+            background: var(--bg-secondary);
+            border-radius: 16px;
             padding: 40px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            max-width: 600px;
+            box-shadow: var(--shadow);
+            max-width: 700px;
             width: 100%;
-            max-height: 90vh;
+            max-height: 95vh;
             overflow-y: auto;
+            border: 1px solid var(--border-color);
         }
+
+        .container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .container::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 3px;
+        }
+        .container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
         h1 {
-            color: #1a202c;
-            margin-bottom: 5px;
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
         }
+
         .subtitle {
-            color: #718096;
-            margin-bottom: 30px;
+            color: var(--text-secondary);
             font-size: 14px;
+            margin-bottom: 28px;
+            font-weight: 400;
         }
+
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
+
         label {
             display: block;
-            color: #2d3748;
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 13px;
         }
+
         input, select, textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
+            color: var(--text-primary);
             font-size: 14px;
-            transition: border-color 0.3s;
-            font-family: inherit;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
+
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: #4299e1;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
         }
+
+        input::placeholder, textarea::placeholder {
+            color: var(--text-muted);
+        }
+
         textarea {
             resize: vertical;
-            min-height: 100px;
+            min-height: 80px;
         }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
         .btn {
             width: 100%;
-            padding: 12px;
-            background: #4299e1;
-            color: white;
+            padding: 11px;
+            background: var(--accent-blue);
+            color: #fff;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.2s, transform 0.1s;
+            font-family: 'Inter', sans-serif;
         }
+
         .btn:hover {
-            background: #3182ce;
+            background: #4c97e8;
         }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
         .btn-success {
-            background: #48bb78;
+            background: var(--accent-green);
         }
+
         .btn-success:hover {
-            background: #38a169;
+            background: #36a844;
         }
+
         .btn-danger {
-            background: #e53e3e;
+            background: var(--accent-red);
         }
+
         .btn-danger:hover {
-            background: #c53030;
+            background: #e0443e;
         }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #2d3545;
+            color: var(--text-primary);
+        }
+
         .toggle-link {
             text-align: center;
-            margin-top: 15px;
-            color: #4299e1;
+            margin-top: 14px;
+            color: var(--accent-blue);
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            transition: color 0.2s;
         }
+
         .toggle-link:hover {
+            color: #79c0ff;
             text-decoration: underline;
         }
+
         .hidden {
             display: none !important;
         }
+
         .message {
-            padding: 12px;
+            padding: 10px 14px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             display: none;
+            font-size: 14px;
         }
+
         .message.error {
-            background: #fed7d7;
-            color: #c53030;
+            background: rgba(248, 81, 73, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(248, 81, 73, 0.3);
             display: block;
         }
+
         .message.success {
-            background: #c6f6d5;
-            color: #276749;
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(63, 185, 80, 0.3);
             display: block;
         }
+
         .badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: capitalize;
         }
-        .badge-open { background: #fbd38d; color: #975a16; }
-        .badge-in_progress { background: #bee3f8; color: #2a69ac; }
-        .badge-resolved { background: #c6f6d5; color: #276749; }
-        .badge-closed { background: #e2e8f0; color: #4a5568; }
-        .badge-low { background: #e2e8f0; color: #4a5568; }
-        .badge-medium { background: #fbd38d; color: #975a16; }
-        .badge-high { background: #feb2b2; color: #c53030; }
-        .badge-critical { background: #fc8181; color: #742a2a; }
+
+        .badge-open { background: rgba(210, 153, 34, 0.2); color: var(--accent-orange); }
+        .badge-in_progress { background: rgba(88, 166, 255, 0.2); color: var(--accent-blue); }
+        .badge-resolved { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
+        .badge-closed { background: rgba(139, 148, 158, 0.2); color: var(--text-secondary); }
+        .badge-low { background: rgba(139, 148, 158, 0.2); color: var(--text-secondary); }
+        .badge-medium { background: rgba(210, 153, 34, 0.2); color: var(--accent-orange); }
+        .badge-high { background: rgba(248, 81, 73, 0.2); color: var(--accent-red); }
+        .badge-critical { background: rgba(248, 81, 73, 0.3); color: var(--accent-red); }
+
         .ticket-card {
-            background: #f7fafc;
-            padding: 15px;
-            border-radius: 8px;
+            background: var(--bg-tertiary);
+            padding: 14px 16px;
+            border-radius: 10px;
             margin-bottom: 10px;
-            border-left: 4px solid #a0aec0;
+            border-left: 3px solid var(--text-muted);
+            transition: border-color 0.2s, background 0.2s;
         }
+
+        .ticket-card:hover {
+            background: #222b3b;
+        }
+
         .ticket-header {
             display: flex;
             justify-content: space-between;
-            align-items: start;
+            align-items: flex-start;
         }
+
         .ticket-title {
             font-weight: 600;
-            color: #2d3748;
+            color: var(--text-primary);
+            font-size: 14px;
         }
+
         .ticket-desc {
-            color: #718096;
+            color: var(--text-secondary);
             font-size: 13px;
             margin-top: 4px;
         }
+
         .ticket-meta {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             margin-top: 8px;
             font-size: 12px;
-            color: #a0aec0;
+            color: var(--text-muted);
             flex-wrap: wrap;
         }
+
+        .ticket-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
+
         .user-name {
             font-weight: 600;
-            color: #2d3748;
+            color: var(--text-primary);
+            font-size: 15px;
         }
+
+        .user-name span {
+            color: var(--accent-blue);
+        }
+
         .submit-section {
-            background: #f7fafc;
+            background: var(--bg-tertiary);
             padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
         }
+
         .submit-section h3 {
-            margin-bottom: 15px;
-            color: #2d3748;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
         }
+
         .tickets-section h3 {
-            margin-bottom: 15px;
-            color: #2d3748;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 14px;
         }
+
         .loading {
-            color: #718096;
-            font-size: 14px;
-        }
-        .no-tickets {
-            color: #718096;
+            color: var(--text-muted);
             font-size: 14px;
             text-align: center;
             padding: 20px;
         }
 
-        /* AI Chat Styles */
+        .no-tickets {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            padding: 30px 20px;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            border: 1px dashed var(--border-color);
+        }
+
+        /* AI Chat Styles - Claude Inspired */
         .chat-container {
-            background: #f7fafc;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            border: 1px solid #e2e8f0;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 24px;
+            border: 1px solid var(--border-color);
         }
+
+        .chat-container h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .chat-messages {
-            max-height: 300px;
+            max-height: 280px;
             overflow-y: auto;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
         }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
         .chat-message {
-            padding: 8px 12px;
+            padding: 8px 14px;
             margin-bottom: 8px;
-            border-radius: 8px;
-            max-width: 80%;
+            border-radius: 10px;
+            max-width: 85%;
+            font-size: 14px;
+            line-height: 1.6;
+            animation: fadeIn 0.3s ease;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .chat-message.user {
-            background: #bee3f8;
+            background: var(--accent-blue);
+            color: #fff;
             margin-left: auto;
             text-align: right;
-            color: #2a69ac;
+            border-bottom-right-radius: 4px;
         }
+
         .chat-message.ai {
-            background: #f0f4f8;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             margin-right: auto;
-            color: #2d3748;
-            border-left: 3px solid #4299e1;
+            border-left: 3px solid var(--accent-blue);
+            border-bottom-left-radius: 4px;
         }
+
         .chat-message .source {
             font-size: 11px;
-            color: #718096;
-            margin-top: 4px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 6px;
         }
+
         .chat-input-row {
             display: flex;
             gap: 10px;
         }
+
         .chat-input-row input {
             flex: 1;
+            padding: 10px 14px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
         }
-        .chat-input-row button {
+
+        .chat-input-row input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        .chat-input-row .btn {
             width: auto;
-            padding: 12px 24px;
+            padding: 10px 20px;
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: 'Inter', sans-serif;
         }
+
+        .chat-input-row .btn:hover {
+            background: #4c97e8;
+        }
+
         .ai-status {
             font-size: 12px;
-            color: #718096;
-            margin-bottom: 8px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
+
+        .ai-status .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
         .typing-indicator {
-            color: #718096;
+            color: var(--text-muted);
             font-style: italic;
-            padding: 8px 12px;
-            background: #f0f4f8;
+            font-size: 13px;
+            padding: 8px 14px;
+            background: var(--bg-primary);
             border-radius: 8px;
             display: none;
+            margin-bottom: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Form row for category/priority */
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                max-height: 98vh;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .chat-input-row {
+                flex-direction: column;
+            }
+            .chat-input-row .btn {
+                width: 100%;
+            }
+            .dashboard-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>IT Helpdesk</h1>
+        <h1>⚡ IT Helpdesk</h1>
         <p class="subtitle">AI-Powered Support System</p>
 
         <!-- Message Display -->
@@ -286,8 +540,8 @@
                 <label>Password</label>
                 <input type="password" id="loginPassword" placeholder="Enter password">
             </div>
-            <button class="btn" onclick="login()">Login</button>
-            <div class="toggle-link" onclick="toggleForms()">Don't have an account? Register</div>
+            <button class="btn" onclick="login()">Sign In</button>
+            <div class="toggle-link" onclick="toggleForms()">Create an account →</div>
         </div>
 
         <!-- Register Form -->
@@ -300,32 +554,34 @@
                 <label>Email Address</label>
                 <input type="email" id="regEmail" placeholder="you@company.com">
             </div>
-            <div class="form-group">
-                <label>Department</label>
-                <input type="text" id="regDepartment" placeholder="IT, HR, Finance, etc.">
-            </div>
-            <div class="form-group">
-                <label>Phone Number</label>
-                <input type="text" id="regPhone" placeholder="+254 700 000 000">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="regDepartment" placeholder="IT, HR, Finance...">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" id="regPhone" placeholder="+254 700 000 000">
+                </div>
             </div>
             <div class="form-group">
                 <label>Password</label>
                 <input type="password" id="regPassword" placeholder="Min 6 characters">
             </div>
-            <button class="btn btn-success" onclick="register()">Register</button>
-            <div class="toggle-link" onclick="toggleForms()">Already have an account? Login</div>
+            <button class="btn btn-success" onclick="register()">Create Account</button>
+            <div class="toggle-link" onclick="toggleForms()">← Back to Sign In</div>
         </div>
 
-        <!-- Dashboard (shown after login) -->
+        <!-- Dashboard -->
         <div id="dashboard" class="hidden">
             <div class="dashboard-header">
-                <span class="user-name" id="userName">👋 Welcome</span>
-                <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px; font-size: 14px;">Logout</button>
+                <span class="user-name" id="userName">👤 <span>Welcome</span></span>
+                <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 6px 16px; font-size: 12px;">Sign Out</button>
             </div>
 
-            <!-- Create Ticket Form -->
+            <!-- Create Ticket -->
             <div class="submit-section">
-                <h3>Submit New Ticket</h3>
+                <h3>📋 New Ticket</h3>
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" id="ticketTitle" placeholder="Brief description of the issue">
@@ -334,8 +590,8 @@
                     <label>Description</label>
                     <textarea id="ticketDesc" placeholder="Detailed explanation of the problem..."></textarea>
                 </div>
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
+                <div class="form-row">
+                    <div class="form-group">
                         <label>Category</label>
                         <select id="ticketCategory">
                             <option value="network">Network</option>
@@ -345,7 +601,7 @@
                             <option value="other">Other</option>
                         </select>
                     </div>
-                    <div style="flex: 1;">
+                    <div class="form-group">
                         <label>Priority</label>
                         <select id="ticketPriority">
                             <option value="low">Low</option>
@@ -360,7 +616,7 @@
 
             <!-- Tickets List -->
             <div class="tickets-section">
-                <h3>My Tickets</h3>
+                <h3>📌 My Tickets</h3>
                 <div id="ticketsList">
                     <p class="loading">Loading tickets...</p>
                 </div>
@@ -368,20 +624,24 @@
 
             <!-- AI Assistant -->
             <div class="chat-container">
-                <h3 style="margin-bottom: 15px; color: #2d3748;">🤖 AI Assistant</h3>
+                <h3>🤖 AI Assistant</h3>
                 <div class="ai-status">
-                    <span id="aiStatus">Status: <span id="aiStatusText">Ready</span></span>
-                    <button onclick="refreshAI()" style="background: #48bb78; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;">Refresh Knowledge</button>
+                    <span><span class="status-dot"></span> <span id="aiStatusText">Ready</span></span>
+                    <button onclick="refreshAI()" style="background: transparent; color: var(--accent-blue); border: 1px solid var(--border-color); padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: 'Inter', sans-serif; transition: background 0.2s;" 
+                            onmouseover="this.style.background='var(--bg-tertiary)'" 
+                            onmouseout="this.style.background='transparent'">
+                        ↻ Refresh
+                    </button>
                 </div>
                 <div id="chatMessages" class="chat-messages">
                     <div class="chat-message ai">
-                        👋 Hello! I'm your AI assistant. I can help you with IT issues based on past solutions. Ask me anything!
+                        👋 Hello! I can help you with IT issues based on past solutions. Ask me anything.
                     </div>
                 </div>
                 <div id="typingIndicator" class="typing-indicator">🤔 AI is thinking...</div>
                 <div class="chat-input-row">
                     <input type="text" id="chatInput" placeholder="Ask me about IT issues..." onkeypress="if(event.key=='Enter') sendChatMessage()">
-                    <button class="btn" onclick="sendChatMessage()" style="width: auto; padding: 12px 24px;">Ask AI</button>
+                    <button class="btn" onclick="sendChatMessage()">Ask AI</button>
                 </div>
             </div>
         </div>
@@ -391,28 +651,18 @@
         let token = localStorage.getItem('token');
         let userId = localStorage.getItem('userId');
 
-        // Helper function to extract error message from FastAPI response
         function getErrorMessage(data) {
-            // If detail is an array (validation errors), extract messages
             if (Array.isArray(data.detail)) {
                 return data.detail.map(err => {
                     const field = err.loc ? err.loc.join('.') : 'unknown';
                     return `${field}: ${err.msg}`;
                 }).join('; ');
             }
-            // If detail is a string
-            if (typeof data.detail === 'string') {
-                return data.detail;
-            }
-            // If message exists
-            if (typeof data.message === 'string') {
-                return data.message;
-            }
-            // Fallback
+            if (typeof data.detail === 'string') return data.detail;
+            if (typeof data.message === 'string') return data.message;
             return 'An error occurred. Please try again.';
         }
 
-        // Initialize
         if (token) {
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
@@ -420,7 +670,6 @@
             loadTickets();
         }
 
-        // Toggle between login and register
         function toggleForms() {
             document.getElementById('loginForm').classList.toggle('hidden');
             document.getElementById('registerForm').classList.toggle('hidden');
@@ -428,14 +677,12 @@
             document.getElementById('message').textContent = '';
         }
 
-        // Show message
         function showMessage(text, type = 'error') {
             const msg = document.getElementById('message');
             msg.textContent = text;
             msg.className = `message ${type}`;
         }
 
-        // Register
         async function register() {
             const name = document.getElementById('regName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
@@ -443,46 +690,29 @@
             const phone = document.getElementById('regPhone').value.trim();
             const password = document.getElementById('regPassword').value;
 
-            // Validate
             if (!name || !email || !password) {
                 showMessage('Please fill in all required fields (Name, Email, Password)');
                 return;
             }
-
             if (password.length < 6) {
                 showMessage('Password must be at least 6 characters');
                 return;
             }
 
             try {
-                console.log('Sending registration request...');
-
                 const response = await fetch('/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: email,
-                        full_name: name,
-                        password: password,
+                        email, full_name: name, password,
                         department: department || '',
                         phone: phone || ''
                     })
                 });
 
-                console.log('Response status:', response.status);
-
-                // Parse response
                 let data;
                 const responseText = await response.text();
-                console.log('Raw response:', responseText);
-
-                try {
-                    data = JSON.parse(responseText);
-                } catch (parseError) {
-                    console.error('Failed to parse response:', parseError);
-                    showMessage('Server error: Invalid response format', 'error');
-                    return;
-                }
+                try { data = JSON.parse(responseText); } catch(e) { data = {}; }
 
                 if (response.ok) {
                     showMessage('Registration successful! Please login.', 'success');
@@ -490,17 +720,13 @@
                     document.getElementById('loginEmail').value = email;
                     document.getElementById('loginPassword').value = '';
                 } else {
-                    // Use helper to get readable error message
-                    const errorMsg = getErrorMessage(data);
-                    showMessage(errorMsg, 'error');
+                    showMessage(getErrorMessage(data), 'error');
                 }
             } catch (error) {
-                console.error('Registration error:', error);
-                showMessage('Network error. Please check your connection and try again.', 'error');
+                showMessage('Network error. Please check your connection.', 'error');
             }
         }
 
-        // Login
         async function login() {
             const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
@@ -515,28 +741,15 @@
                 formData.append('username', email);
                 formData.append('password', password);
 
-                console.log('Attempting login for:', email);
-
                 const response = await fetch('/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: formData
                 });
 
-                console.log('Login response status:', response.status);
-
-                // Parse response
                 let data;
                 const responseText = await response.text();
-                console.log('Raw login response:', responseText);
-
-                try {
-                    data = JSON.parse(responseText);
-                } catch (parseError) {
-                    console.error('Failed to parse login response:', parseError);
-                    showMessage('Server error: Invalid response format', 'error');
-                    return;
-                }
+                try { data = JSON.parse(responseText); } catch(e) { data = {}; }
 
                 if (response.ok) {
                     token = data.access_token;
@@ -550,21 +763,17 @@
                     loadUserInfo();
                     loadTickets();
 
-                    // Connect WebSocket if available
                     if (typeof connectWebSocket === 'function') {
                         connectWebSocket(userId, token);
                     }
                 } else {
-                    const errorMsg = typeof data.detail === 'string' ? data.detail : 'Invalid email or password';
-                    showMessage(errorMsg, 'error');
+                    showMessage('Invalid email or password', 'error');
                 }
             } catch (error) {
-                console.error('Login error:', error);
                 showMessage('Network error. Please try again.', 'error');
             }
         }
 
-        // Logout
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('userId');
@@ -577,7 +786,6 @@
             document.getElementById('message').textContent = '';
         }
 
-        // Load user info
         async function loadUserInfo() {
             try {
                 const response = await fetch('/users/me', {
@@ -585,14 +793,13 @@
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('userName').textContent = `👋 ${data.full_name} (${data.role})`;
+                    document.getElementById('userName').innerHTML = `👤 <span>${data.full_name}</span>`;
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
             }
         }
 
-        // Create ticket
         async function createTicket() {
             const title = document.getElementById('ticketTitle').value.trim();
             const description = document.getElementById('ticketDesc').value.trim();
@@ -621,15 +828,13 @@
                     loadTickets();
                 } else {
                     const data = await response.json();
-                    const errorMsg = getErrorMessage(data);
-                    showMessage(errorMsg, 'error');
+                    showMessage(getErrorMessage(data), 'error');
                 }
             } catch (error) {
                 showMessage('Network error. Please try again.', 'error');
             }
         }
 
-        // Load tickets
         async function loadTickets() {
             try {
                 const response = await fetch('/tickets/', {
@@ -641,20 +846,19 @@
                     const container = document.getElementById('ticketsList');
 
                     if (tickets.length === 0) {
-                        container.innerHTML = '<p class="no-tickets">No tickets submitted yet.</p>';
+                        container.innerHTML = '<div class="no-tickets">No tickets submitted yet.</div>';
                         return;
                     }
 
                     container.innerHTML = tickets.map(ticket => {
-                        const priorityColors = {
-                            'low': '#a0aec0',
-                            'medium': '#ecc94b',
-                            'high': '#ed8936',
-                            'critical': '#e53e3e'
+                        const colors = {
+                            'low': '#8b949e',
+                            'medium': '#d29922',
+                            'high': '#f85149',
+                            'critical': '#f85149'
                         };
-                        const borderColor = priorityColors[ticket.priority] || '#a0aec0';
                         return `
-                            <div class="ticket-card" style="border-left-color: ${borderColor};">
+                            <div class="ticket-card" style="border-left-color: ${colors[ticket.priority] || '#8b949e'};">
                                 <div class="ticket-header">
                                     <div>
                                         <div class="ticket-title">${ticket.title}</div>
@@ -665,7 +869,7 @@
                                 <div class="ticket-meta">
                                     <span>📁 ${ticket.category}</span>
                                     <span>🔵 ${ticket.priority}</span>
-                                    <span>⏱ ${new Date(ticket.created_at).toLocaleDateString()}</span>
+                                    <span>📅 ${new Date(ticket.created_at).toLocaleDateString()}</span>
                                     ${ticket.assignee_name ? `<span>👤 ${ticket.assignee_name}</span>` : '<span>⚠️ Unassigned</span>'}
                                 </div>
                             </div>
@@ -674,60 +878,49 @@
                 }
             } catch (error) {
                 console.error('Error loading tickets:', error);
-                document.getElementById('ticketsList').innerHTML = '<p class="no-tickets">Error loading tickets. Please refresh.</p>';
+                document.getElementById('ticketsList').innerHTML = '<div class="no-tickets">Error loading tickets.</div>';
             }
         }
 
-        // Auto-refresh tickets every 30 seconds
         setInterval(() => {
             if (token) loadTickets();
         }, 30000);
 
-        // ============================================
-        // AI CHAT FUNCTIONS
-        // ============================================
-
+        // ========== AI CHAT ==========
         async function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
-            
             if (!message) return;
-            
-            // Add user message
+
             addChatMessage(message, 'user');
             input.value = '';
-            
-            // Show typing indicator
+
             document.getElementById('typingIndicator').style.display = 'block';
             document.getElementById('aiStatusText').textContent = 'Thinking...';
-            
+
             try {
                 const response = await fetch(`/ai/ask?question=${encodeURIComponent(message)}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
-                    let aiMessage = data.answer;
-                    
-                    // Add sources if available
+                    let aiMessage = data.answer || 'I got your question, but I don\'t have a solution yet.';
                     if (data.sources && data.sources.length > 0) {
                         aiMessage += '\n\n📚 **Sources:**';
-                        data.sources.forEach((source, i) => {
-                            aiMessage += `\n${i+1}. ${source.title} (${source.category})`;
+                        data.sources.forEach((s, i) => {
+                            aiMessage += `\n${i+1}. ${s.title} (${s.category})`;
                         });
                     }
-                    
                     addChatMessage(aiMessage, 'ai');
                 } else {
                     const data = await response.json();
-                    const errorMsg = getErrorMessage(data);
-                    addChatMessage(`Error: ${errorMsg}`, 'ai');
+                    addChatMessage(`Error: ${getErrorMessage(data)}`, 'ai');
                 }
             } catch (error) {
                 addChatMessage('Network error. Please check your connection.', 'ai');
             }
-            
+
             document.getElementById('typingIndicator').style.display = 'none';
             document.getElementById('aiStatusText').textContent = 'Ready';
         }
@@ -749,14 +942,10 @@
                 });
                 if (response.ok) {
                     document.getElementById('aiStatusText').textContent = 'Refreshed ✅';
-                    showMessage('AI knowledge refreshed successfully!', 'success');
+                    showMessage('AI knowledge refreshed!', 'success');
                     setTimeout(() => {
                         document.getElementById('aiStatusText').textContent = 'Ready';
                     }, 3000);
-                } else {
-                    const data = await response.json();
-                    const errorMsg = getErrorMessage(data);
-                    showMessage(`Refresh failed: ${errorMsg}`, 'error');
                 }
             } catch (error) {
                 showMessage('Failed to refresh AI knowledge.', 'error');

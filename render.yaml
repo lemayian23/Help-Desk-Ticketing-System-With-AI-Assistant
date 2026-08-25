@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: helpdesk-api
+    runtime: python
+    repo: https://github.com/lemayian23/Help-Desk-Ticketing-System-With-AI-Assistant
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
