@@ -10,9 +10,9 @@ passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
 psycopg2-binary==2.9.10
 
-# AI & RAG Dependencies
+# AI & RAG Dependencies (FAISS version fixed)
 sentence-transformers==3.3.1
-faiss-cpu==1.9.0
+faiss-cpu==1.12.0
 numpy==1.26.4
 transformers==4.46.3
 torch==2.5.1

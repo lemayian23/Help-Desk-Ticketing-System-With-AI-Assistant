@@ -1,3 +1,7 @@
+import os
+
+# Get port from environment (Render sets this automatically)
+PORT = int(os.getenv("PORT", 8000))
 from fastapi import FastAPI, Request, WebSocket, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -574,4 +578,4 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
