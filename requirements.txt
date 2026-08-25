@@ -9,3 +9,14 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
 psycopg2-binary==2.9.10
+
+# AI & RAG Dependencies
+sentence-transformers==3.3.1
+faiss-cpu==1.9.0
+numpy==1.26.4
+transformers==4.46.3
+torch==2.5.1
+langchain==0.3.13
+langchain-community==0.3.13
+langchain-core==0.3.29
+pypdf==5.1.0
