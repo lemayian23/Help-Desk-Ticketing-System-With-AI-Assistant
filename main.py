@@ -344,6 +344,91 @@ async def add_message(
     }
 
 # ============================================
+# AI /RAG ENDPOINTS
+# ============================================
+
+@app.post("/ai/ask")
+async def ask_ai(
+    question: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db) 
+):
+    """
+    Ask the AI assistant a question.
+    Uses RAG to find relevant solutions from past tickets.
+    """
+    response = rag_service.generate_response(question, db)
+    return response
+@app.post("/ai/refresh")
+async def refresh_ai(
+    current_user: User = Depends(require_role(["admin", "it-support"])),
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh the RAG index with new tickets.
+    Admin and I support only.
+    """
+    rag_service.initilize(db)
+    return {"message": "RAG index refreshed successfully", "documents": len(rag_service.documents)}
+
+@app.post("/tickets/{ticket_id}/solution")
+async def add_solution(
+    ticket_id: int,
+    solution: str,
+    current_user: User = Depends(require_role(["admin", "it-support"])),
+    db: Session = Depends(get_db)
+):
+    """
+    Add a solution to a ticket. This will be used by the AI for future answers.
+    """
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Check if solution already exists
+    existing_solution = db.query(TicketSolution).filter(
+        TicketSolution.ticket_id == ticket_id
+    ).first()
+    if existing solution:
+        existing_solution.solution = solution
+        existing_solution.used_count += 1
+        solution_obj = existing_solution
+    else:
+        solution_obj = TicketSolution(
+            ticket_id=ticket_id,
+            solution=solution
+        )
+        db.add(solution_obj)
+    db.commit()
+
+    # Refresh RAG
+    rag_service.initialize(db)
+
+    return {
+        "message": "Solution added successfully",
+        "ticket_id": ticket_id
+    }
+
+@app.get("/ai/stats")
+async def get_ai_stats(
+    current_user: User =Depends(require_role(["admin", "it_support"])),
+    db: Session = Depends(get_db)
+):
+    """
+    Get statitics about the RAG system.
+    """
+    total_solutions = db.query(TicketSolution).count()
+    total_resolved_tickets = db.query(Ticket).filter(
+        Ticket.status == "resolved"
+    ).count()
+
+    return {
+        "documents_indexed": len(rag_service.documents),
+        "total_solutions": total_solutions,
+        "total_resolved": rag_service.is_initialized
+    }
+
+# ============================================
 # USER ENDPOINTS
 # ============================================
 
