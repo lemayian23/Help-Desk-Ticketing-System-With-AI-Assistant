@@ -1,9 +1,5 @@
-import os
-
-# Get port from environment (Render sets this automatically)
-PORT = int(os.getenv("PORT", 8000))
 from fastapi import FastAPI, Request, WebSocket, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
@@ -30,8 +26,14 @@ from auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 
-# Import RAG service
-from rag_service import rag_service
+# Gracefully handle RAG import (AI features disabled on Render)
+try:
+    from rag_service import rag_service
+    RAG_AVAILABLE = True
+except ImportError:
+    rag_service = None
+    RAG_AVAILABLE = False
+    print("⚠️ RAG service not available (AI features disabled)")
 
 # ---------- Pydantic models ----------
 class UserRegister(BaseModel):
@@ -173,24 +175,6 @@ async def create_ticket(
     db.add(audit_log)
     db.commit()
 
-    # Broadcast via WebSocket (if manager is available)
-    try:
-        from websocket_manager import manager
-        ticket_info = {
-            "id": ticket.id,
-            "title": ticket.title,
-            "description": ticket.description,
-            "category": ticket.category.value,
-            "priority": ticket.priority.value,
-            "status": ticket.status.value,
-            "submitted_by": ticket.submitted_by,
-            "submitter_name": current_user.full_name,
-            "created_at": ticket.created_at.isoformat()
-        }
-        await manager.broadcast_ticket_update(ticket_info, "created")
-    except:
-        pass
-
     return {
         "message": "Ticket created successfully",
         "ticket_id": ticket.id,
@@ -207,19 +191,13 @@ async def get_tickets(
 ):
     query = db.query(Ticket)
 
-    # Filter by status
     if status:
         query = query.filter(Ticket.status == status)
-
-    # Filter by category
     if category:
         query = query.filter(Ticket.category == category)
-
-    # Filter by assignee
     if assigned_to:
         query = query.filter(Ticket.assigned_to == assigned_to)
 
-    # If user is staff, only show their tickets
     if current_user.role == UserRole.STAFF:
         query = query.filter(Ticket.submitted_by == current_user.id)
 
@@ -255,7 +233,6 @@ async def get_ticket(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    # Check permission
     if current_user.role == UserRole.STAFF and ticket.submitted_by != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to view this ticket")
 
@@ -299,7 +276,6 @@ async def update_ticket(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    # Update fields
     if status:
         try:
             ticket.status = TicketStatus(status.lower())
@@ -315,7 +291,6 @@ async def update_ticket(
             raise HTTPException(status_code=400, detail="Invalid priority")
 
     if assigned_to:
-        # Verify user exists
         assignee = db.query(User).filter(User.id == assigned_to).first()
         if not assignee:
             raise HTTPException(status_code=404, detail="User not found")
@@ -324,42 +299,6 @@ async def update_ticket(
     ticket.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(ticket)
-
-    # Log the action
-    audit_log = AuditLog(
-        user_id=current_user.id,
-        action="updated",
-        entity_type="ticket",
-        entity_id=ticket.id,
-        details=json.dumps({
-            "status": status,
-            "priority": priority,
-            "assigned_to": assigned_to
-        })
-    )
-    db.add(audit_log)
-    db.commit()
-
-    # Broadcast WebSocket update
-    try:
-        from websocket_manager import manager
-        ticket_info = {
-            "id": ticket.id,
-            "title": ticket.title,
-            "description": ticket.description,
-            "category": ticket.category.value,
-            "priority": ticket.priority.value,
-            "status": ticket.status.value,
-            "submitted_by": ticket.submitted_by,
-            "submitter_name": ticket.submitter.full_name if ticket.submitter else None,
-            "assigned_to": ticket.assigned_to,
-            "assignee_name": ticket.assignee.full_name if ticket.assignee else None,
-            "created_at": ticket.created_at.isoformat(),
-            "updated_at": ticket.updated_at.isoformat()
-        }
-        await manager.broadcast_ticket_update(ticket_info, "updated")
-    except:
-        pass
 
     return {"message": "Ticket updated successfully", "ticket_id": ticket.id}
 
@@ -375,11 +314,9 @@ async def add_message(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    # Check permission
     if current_user.role == UserRole.STAFF and ticket.submitted_by != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to comment on this ticket")
 
-    # Create message
     new_message = TicketMessage(
         ticket_id=ticket_id,
         user_id=current_user.id,
@@ -432,7 +369,7 @@ async def get_users(
     ]
 
 # ============================================
-# AI / RAG ENDPOINTS (Fixed: GET instead of POST)
+# AI / RAG ENDPOINTS (Gracefully disabled if RAG not available)
 # ============================================
 
 @app.get("/ai/ask")
@@ -441,6 +378,11 @@ async def ask_ai(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    if not RAG_AVAILABLE or not rag_service:
+        return {
+            "answer": "AI features are currently disabled. Please try again later.",
+            "sources": []
+        }
     response = rag_service.generate_response(question, db)
     return response
 
@@ -449,6 +391,8 @@ async def refresh_ai(
     current_user: User = Depends(require_role(["admin", "it_support"])),
     db: Session = Depends(get_db)
 ):
+    if not RAG_AVAILABLE or not rag_service:
+        return {"message": "AI features are currently disabled.", "documents": 0}
     rag_service.initialize(db)
     return {"message": "RAG index refreshed successfully", "documents": len(rag_service.documents)}
 
@@ -459,11 +403,12 @@ async def add_solution(
     current_user: User = Depends(require_role(["admin", "it_support"])),
     db: Session = Depends(get_db)
 ):
+    if not RAG_AVAILABLE or not rag_service:
+        raise HTTPException(status_code=503, detail="AI features are currently disabled")
     ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    # Check if solution already exists
     existing_solution = db.query(TicketSolution).filter(
         TicketSolution.ticket_id == ticket_id
     ).first()
@@ -480,8 +425,6 @@ async def add_solution(
         db.add(solution_obj)
     
     db.commit()
-    
-    # Refresh RAG
     rag_service.initialize(db)
     
     return {
@@ -494,6 +437,13 @@ async def get_ai_stats(
     current_user: User = Depends(require_role(["admin", "it_support"])),
     db: Session = Depends(get_db)
 ):
+    if not RAG_AVAILABLE or not rag_service:
+        return {
+            "documents_indexed": 0,
+            "total_solutions": 0,
+            "total_resolved_tickets": 0,
+            "is_initialized": False
+        }
     total_solutions = db.query(TicketSolution).count()
     total_resolved_tickets = db.query(Ticket).filter(
         Ticket.status == "resolved"
@@ -519,42 +469,57 @@ async def index(request: Request):
 # ============================================
 
 from websocket_manager import manager
+import jwt
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    # Get user info from database
-    db = next(get_db())
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        await websocket.close(code=1008, reason="User not found")
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008, reason="Missing authentication token")
         return
-    
-    # Connect the user
-    await manager.connect(websocket, user_id, user.role.value)
-    
+
     try:
-        # Send welcome message
-        await manager.send_to_user(user_id, {
-            "type": "connection",
-            "message": f"Welcome {user.full_name}! You are connected.",
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # Keep connection alive and listen for messages
-        while True:
-            data = await websocket.receive_text()
-            if data == "ping":
-                await websocket.send_text("pong")
-            else:
-                await manager.send_to_user(user_id, {
-                    "type": "echo",
-                    "message": data,
-                    "timestamp": datetime.now().isoformat()
-                })
+        from auth import SECRET_KEY, ALGORITHM
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if not email:
+            await websocket.close(code=1008, reason="Invalid token")
+            return
+
+        db = next(get_db())
+        user = db.query(User).filter(User.email == email).first()
+        if not user or user.id != user_id:
+            await websocket.close(code=1008, reason="User not found")
+            return
+
+        await manager.connect(websocket, user_id, user.role.value)
+
+        try:
+            await manager.send_to_user(user_id, {
+                "type": "connection",
+                "message": f"Welcome {user.full_name}! You are connected.",
+                "timestamp": datetime.now().isoformat()
+            })
+            while True:
+                data = await websocket.receive_text()
+                if data == "ping":
+                    await websocket.send_text("pong")
+                else:
+                    await manager.send_to_user(user_id, {
+                        "type": "echo",
+                        "message": data,
+                        "timestamp": datetime.now().isoformat()
+                    })
+        except Exception as e:
+            print(f"WebSocket error for user {user_id}: {e}")
+        finally:
+            manager.disconnect(user_id, user.role.value)
+
+    except jwt.InvalidTokenError:
+        await websocket.close(code=1008, reason="Invalid authentication token")
     except Exception as e:
-        print(f"WebSocket error for user {user_id}: {e}")
-    finally:
-        manager.disconnect(user_id, user.role.value)
+        print(f"WebSocket authentication error: {e}")
+        await websocket.close(code=1011, reason="Internal server error")
 
 # ============================================
 # STARTUP EVENTS
@@ -563,10 +528,15 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 @app.on_event("startup")
 async def startup_event():
     print(f"🚀 Server started : {datetime.now()}")
-    # RAG initialization disabled to avoid Hugging Face download issues
-    # db = next(get_db())
-    # rag_service.initialize(db)
-    # print("✅ RAG service initialized")
+    if RAG_AVAILABLE and rag_service:
+        try:
+            db = next(get_db())
+            rag_service.initialize(db)
+            print("✅ RAG service initialized")
+        except Exception as e:
+            print(f"⚠️ RAG initialization failed: {e}")
+    else:
+        print("ℹ️ RAG service skipped (AI features disabled)")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -578,4 +548,5 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
