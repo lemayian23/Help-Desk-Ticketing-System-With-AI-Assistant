@@ -1,16 +1,536 @@
 <!DOCTYPE html>
-<html>
-   <head>
-      <title>Chat</title>
-      <script src="{{ url_for('static', path='ws.js') }}"></script>
-   </head>
-   <body>
-      <h1>WebSocket Chat</h1>
-      <form action="" onsubmit="sendMessage(event)">
-         <input type="text" id="messageText" autocomplete="off"/>
-         <button>Send</button>
-      </form>
-      <ul id="messages">
-      </ul>
-   </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Helpdesk System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        h1 {
+            color: #1a202c;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #3182ce;
+        }
+        .btn-success {
+            background: #48bb78;
+        }
+        .btn-success:hover {
+            background: #38a169;
+        }
+        .btn-danger {
+            background: #e53e3e;
+        }
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        .toggle-link {
+            text-align: center;
+            margin-top: 15px;
+            color: #4299e1;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .toggle-link:hover {
+            text-decoration: underline;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .message.error {
+            background: #fed7d7;
+            color: #c53030;
+            display: block;
+        }
+        .message.success {
+            background: #c6f6d5;
+            color: #276749;
+            display: block;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-open { background: #fbd38d; color: #975a16; }
+        .badge-in_progress { background: #bee3f8; color: #2a69ac; }
+        .badge-resolved { background: #c6f6d5; color: #276749; }
+        .badge-closed { background: #e2e8f0; color: #4a5568; }
+        .badge-low { background: #e2e8f0; color: #4a5568; }
+        .badge-medium { background: #fbd38d; color: #975a16; }
+        .badge-high { background: #feb2b2; color: #c53030; }
+        .badge-critical { background: #fc8181; color: #742a2a; }
+        .ticket-card {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #a0aec0;
+        }
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+        .ticket-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .ticket-desc {
+            color: #718096;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .ticket-meta {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #a0aec0;
+            flex-wrap: wrap;
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .user-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .submit-section {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .submit-section h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .tickets-section h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .loading {
+            color: #718096;
+            font-size: 14px;
+        }
+        .no-tickets {
+            color: #718096;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IT Helpdesk</h1>
+        <p class="subtitle">AI-Powered Support System</p>
+
+        <!-- Message Display -->
+        <div id="message" class="message"></div>
+
+        <!-- Login Form -->
+        <div id="loginForm">
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="loginEmail" placeholder="you@company.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter password">
+            </div>
+            <button class="btn" onclick="login()">Login</button>
+            <div class="toggle-link" onclick="toggleForms()">Don't have an account? Register</div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="hidden">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="regName" placeholder="John Doe">
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="regEmail" placeholder="you@company.com">
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <input type="text" id="regDepartment" placeholder="IT, HR, Finance, etc.">
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="regPhone" placeholder="+254 700 000 000">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPassword" placeholder="Min 6 characters">
+            </div>
+            <button class="btn btn-success" onclick="register()">Register</button>
+            <div class="toggle-link" onclick="toggleForms()">Already have an account? Login</div>
+        </div>
+
+        <!-- Dashboard (shown after login) -->
+        <div id="dashboard" class="hidden">
+            <div class="dashboard-header">
+                <span class="user-name" id="userName">👋 Welcome</span>
+                <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px; font-size: 14px;">Logout</button>
+            </div>
+
+            <!-- Create Ticket Form -->
+            <div class="submit-section">
+                <h3>Submit New Ticket</h3>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="ticketTitle" placeholder="Brief description of the issue">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="ticketDesc" placeholder="Detailed explanation of the problem..."></textarea>
+                </div>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Category</label>
+                        <select id="ticketCategory">
+                            <option value="network">Network</option>
+                            <option value="hardware">Hardware</option>
+                            <option value="printing">Printing</option>
+                            <option value="software">Software</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Priority</label>
+                        <select id="ticketPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="createTicket()">Submit Ticket</button>
+            </div>
+
+            <!-- Tickets List -->
+            <div class="tickets-section">
+                <h3>My Tickets</h3>
+                <div id="ticketsList">
+                    <p class="loading">Loading tickets...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        let userId = localStorage.getItem('userId');
+
+        // Initialize
+        if (token) {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            loadUserInfo();
+            loadTickets();
+        }
+
+        // Toggle between login and register
+        function toggleForms() {
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('registerForm').classList.toggle('hidden');
+            document.getElementById('message').className = 'message';
+            document.getElementById('message').textContent = '';
+        }
+
+        // Show message
+        function showMessage(text, type = 'error') {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+        }
+
+        // Register
+        async function register() {
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const department = document.getElementById('regDepartment').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPassword').value;
+
+            if (!name || !email || !password) {
+                showMessage('Please fill in all required fields (Name, Email, Password)');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        full_name: name,
+                        password,
+                        department,
+                        phone
+                    })
+                });
+
+                if (response.ok) {
+                    showMessage('Registration successful! Please login.', 'success');
+                    toggleForms();
+                    document.getElementById('loginEmail').value = email;
+                    document.getElementById('loginPassword').value = '';
+                } else {
+                    const data = await response.json();
+                    showMessage(data.detail || 'Registration failed');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+            }
+        }
+
+        // Login
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showMessage('Please enter email and password');
+                return;
+            }
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', email);
+                formData.append('password', password);
+
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.access_token;
+                    userId = data.user_id;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('userId', userId);
+
+                    document.getElementById('loginForm').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    showMessage('Login successful!', 'success');
+                    loadUserInfo();
+                    loadTickets();
+                } else {
+                    showMessage('Invalid email or password');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            token = null;
+            userId = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('message').className = 'message';
+            document.getElementById('message').textContent = '';
+        }
+
+        // Load user info
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('userName').textContent = `👋 ${data.full_name} (${data.role})`;
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        // Create ticket
+        async function createTicket() {
+            const title = document.getElementById('ticketTitle').value.trim();
+            const description = document.getElementById('ticketDesc').value.trim();
+            const category = document.getElementById('ticketCategory').value;
+            const priority = document.getElementById('ticketPriority').value;
+
+            if (!title || !description) {
+                showMessage('Please enter title and description');
+                return;
+            }
+
+            try {
+                const response = await fetch('/tickets/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title, description, category, priority })
+                });
+
+                if (response.ok) {
+                    showMessage('Ticket submitted successfully!', 'success');
+                    document.getElementById('ticketTitle').value = '';
+                    document.getElementById('ticketDesc').value = '';
+                    loadTickets();
+                } else {
+                    const data = await response.json();
+                    showMessage(data.detail || 'Failed to submit ticket');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.');
+            }
+        }
+
+        // Load tickets
+        async function loadTickets() {
+            try {
+                const response = await fetch('/tickets/', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const tickets = await response.json();
+                    const container = document.getElementById('ticketsList');
+
+                    if (tickets.length === 0) {
+                        container.innerHTML = '<p class="no-tickets">No tickets submitted yet.</p>';
+                        return;
+                    }
+
+                    container.innerHTML = tickets.map(ticket => {
+                        const priorityColors = {
+                            'low': '#a0aec0',
+                            'medium': '#ecc94b',
+                            'high': '#ed8936',
+                            'critical': '#e53e3e'
+                        };
+                        const borderColor = priorityColors[ticket.priority] || '#a0aec0';
+                        return `
+                            <div class="ticket-card" style="border-left-color: ${borderColor};">
+                                <div class="ticket-header">
+                                    <div>
+                                        <div class="ticket-title">${ticket.title}</div>
+                                        <div class="ticket-desc">${ticket.description.substring(0, 100)}${ticket.description.length > 100 ? '...' : ''}</div>
+                                    </div>
+                                    <span class="badge badge-${ticket.status}">${ticket.status}</span>
+                                </div>
+                                <div class="ticket-meta">
+                                    <span>📁 ${ticket.category}</span>
+                                    <span>🔵 ${ticket.priority}</span>
+                                    <span>⏱ ${new Date(ticket.created_at).toLocaleDateString()}</span>
+                                    ${ticket.assignee_name ? `<span>👤 ${ticket.assignee_name}</span>` : '<span>⚠️ Unassigned</span>'}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+                document.getElementById('ticketsList').innerHTML = '<p class="no-tickets">Error loading tickets. Please refresh.</p>';
+            }
+        }
+
+        // Auto-refresh tickets every 30 seconds
+        setInterval(() => {
+            if (token) loadTickets();
+        }, 30000);
+    </script>
+</body>
 </html>
