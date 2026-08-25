@@ -9,7 +9,7 @@ from typing import List
 import json
 import os
 from dotenv import load_dotenv
-from rag_service import rag_service
+from pydantic import BaseModel
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +25,23 @@ from auth import (
     authenticate_user, create_access_token, get_password_hash,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+
+# Import RAG service
+from rag_service import rag_service
+
+# ---------- Pydantic models ----------
+class UserRegister(BaseModel):
+    email: str
+    full_name: str
+    password: str
+    department: str = ""
+    phone: str = ""
+
+class TicketCreate(BaseModel):
+    title: str
+    description: str
+    category: str = "other"
+    priority: str = "medium"
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -67,25 +84,21 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 
 @app.post("/register")
 async def register(
-    email: str,
-    full_name: str,
-    password: str,
-    department: str = None,
-    phone: str = None,
+    user_data: UserRegister,
     db: Session = Depends(get_db)
 ):
     # Check if user exists
-    existing_user = db.query(User).filter(User.email == email).first()
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Create new user
-    hashed_password = get_password_hash(password)
+    hashed_password = get_password_hash(user_data.password)
     new_user = User(
-        email=email,
-        full_name=full_name,
-        department=department,
-        phone=phone,
+        email=user_data.email,
+        full_name=user_data.full_name,
+        department=user_data.department,
+        phone=user_data.phone,
         hashed_password=hashed_password,
         role=UserRole.STAFF
     )
@@ -99,7 +112,7 @@ async def register(
         action="registered",
         entity_type="user",
         entity_id=new_user.id,
-        details=json.dumps({"email": email, "full_name": full_name})
+        details=json.dumps({"email": user_data.email, "full_name": user_data.full_name})
     )
     db.add(audit_log)
     db.commit()
@@ -117,29 +130,26 @@ async def register(
 
 @app.post("/tickets/")
 async def create_ticket(
-    title: str,
-    description: str,
-    category: str = "other",
-    priority: str = "medium",
+    ticket_data: TicketCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     # Validate category
     try:
-        category_enum = TicketCategory(category.lower())
+        category_enum = TicketCategory(ticket_data.category.lower())
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid category")
     
     # Validate priority
     try:
-        priority_enum = TicketPriority(priority.lower())
+        priority_enum = TicketPriority(ticket_data.priority.lower())
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid priority")
 
     # Create ticket
     ticket = Ticket(
-        title=title,
-        description=description,
+        title=ticket_data.title,
+        description=ticket_data.description,
         category=category_enum,
         priority=priority_enum,
         submitted_by=current_user.id
@@ -154,10 +164,28 @@ async def create_ticket(
         action="created",
         entity_type="ticket",
         entity_id=ticket.id,
-        details=json.dumps({"title": title, "category": category})
+        details=json.dumps({"title": ticket_data.title, "category": ticket_data.category})
     )
     db.add(audit_log)
     db.commit()
+
+    # Broadcast via WebSocket (if manager is available)
+    try:
+        from websocket_manager import manager
+        ticket_info = {
+            "id": ticket.id,
+            "title": ticket.title,
+            "description": ticket.description,
+            "category": ticket.category.value,
+            "priority": ticket.priority.value,
+            "status": ticket.status.value,
+            "submitted_by": ticket.submitted_by,
+            "submitter_name": current_user.full_name,
+            "created_at": ticket.created_at.isoformat()
+        }
+        await manager.broadcast_ticket_update(ticket_info, "created")
+    except:
+        pass
 
     return {
         "message": "Ticket created successfully",
@@ -308,6 +336,27 @@ async def update_ticket(
     db.add(audit_log)
     db.commit()
 
+    # Broadcast WebSocket update
+    try:
+        from websocket_manager import manager
+        ticket_info = {
+            "id": ticket.id,
+            "title": ticket.title,
+            "description": ticket.description,
+            "category": ticket.category.value,
+            "priority": ticket.priority.value,
+            "status": ticket.status.value,
+            "submitted_by": ticket.submitted_by,
+            "submitter_name": ticket.submitter.full_name if ticket.submitter else None,
+            "assigned_to": ticket.assigned_to,
+            "assignee_name": ticket.assignee.full_name if ticket.assignee else None,
+            "created_at": ticket.created_at.isoformat(),
+            "updated_at": ticket.updated_at.isoformat()
+        }
+        await manager.broadcast_ticket_update(ticket_info, "updated")
+    except:
+        pass
+
     return {"message": "Ticket updated successfully", "ticket_id": ticket.id}
 
 @app.post("/tickets/{ticket_id}/messages")
@@ -341,91 +390,6 @@ async def add_message(
         "message": "Message added",
         "message_id": new_message.id,
         "created_at": new_message.created_at.isoformat()
-    }
-
-# ============================================
-# AI /RAG ENDPOINTS
-# ============================================
-
-@app.post("/ai/ask")
-async def ask_ai(
-    question: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db) 
-):
-    """
-    Ask the AI assistant a question.
-    Uses RAG to find relevant solutions from past tickets.
-    """
-    response = rag_service.generate_response(question, db)
-    return response
-@app.post("/ai/refresh")
-async def refresh_ai(
-    current_user: User = Depends(require_role(["admin", "it-support"])),
-    db: Session = Depends(get_db)
-):
-    """
-    Refresh the RAG index with new tickets.
-    Admin and I support only.
-    """
-    rag_service.initilize(db)
-    return {"message": "RAG index refreshed successfully", "documents": len(rag_service.documents)}
-
-@app.post("/tickets/{ticket_id}/solution")
-async def add_solution(
-    ticket_id: int,
-    solution: str,
-    current_user: User = Depends(require_role(["admin", "it-support"])),
-    db: Session = Depends(get_db)
-):
-    """
-    Add a solution to a ticket. This will be used by the AI for future answers.
-    """
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-
-    # Check if solution already exists
-    existing_solution = db.query(TicketSolution).filter(
-        TicketSolution.ticket_id == ticket_id
-    ).first()
-    if existing solution:
-        existing_solution.solution = solution
-        existing_solution.used_count += 1
-        solution_obj = existing_solution
-    else:
-        solution_obj = TicketSolution(
-            ticket_id=ticket_id,
-            solution=solution
-        )
-        db.add(solution_obj)
-    db.commit()
-
-    # Refresh RAG
-    rag_service.initialize(db)
-
-    return {
-        "message": "Solution added successfully",
-        "ticket_id": ticket_id
-    }
-
-@app.get("/ai/stats")
-async def get_ai_stats(
-    current_user: User =Depends(require_role(["admin", "it_support"])),
-    db: Session = Depends(get_db)
-):
-    """
-    Get statitics about the RAG system.
-    """
-    total_solutions = db.query(TicketSolution).count()
-    total_resolved_tickets = db.query(Ticket).filter(
-        Ticket.status == "resolved"
-    ).count()
-
-    return {
-        "documents_indexed": len(rag_service.documents),
-        "total_solutions": total_solutions,
-        "total_resolved": rag_service.is_initialized
     }
 
 # ============================================
@@ -464,6 +428,81 @@ async def get_users(
     ]
 
 # ============================================
+# AI / RAG ENDPOINTS (Fixed: GET instead of POST)
+# ============================================
+
+@app.get("/ai/ask")
+async def ask_ai(
+    question: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    response = rag_service.generate_response(question, db)
+    return response
+
+@app.post("/ai/refresh")
+async def refresh_ai(
+    current_user: User = Depends(require_role(["admin", "it_support"])),
+    db: Session = Depends(get_db)
+):
+    rag_service.initialize(db)
+    return {"message": "RAG index refreshed successfully", "documents": len(rag_service.documents)}
+
+@app.post("/tickets/{ticket_id}/solution")
+async def add_solution(
+    ticket_id: int,
+    solution: str,
+    current_user: User = Depends(require_role(["admin", "it_support"])),
+    db: Session = Depends(get_db)
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Check if solution already exists
+    existing_solution = db.query(TicketSolution).filter(
+        TicketSolution.ticket_id == ticket_id
+    ).first()
+    
+    if existing_solution:
+        existing_solution.solution = solution
+        existing_solution.used_count += 1
+        solution_obj = existing_solution
+    else:
+        solution_obj = TicketSolution(
+            ticket_id=ticket_id,
+            solution=solution
+        )
+        db.add(solution_obj)
+    
+    db.commit()
+    
+    # Refresh RAG
+    rag_service.initialize(db)
+    
+    return {
+        "message": "Solution added successfully",
+        "ticket_id": ticket_id
+    }
+
+@app.get("/ai/stats")
+async def get_ai_stats(
+    current_user: User = Depends(require_role(["admin", "it_support"])),
+    db: Session = Depends(get_db)
+):
+    total_solutions = db.query(TicketSolution).count()
+    total_resolved_tickets = db.query(Ticket).filter(
+        Ticket.status == "resolved"
+    ).count()
+    
+    return {
+        "documents_indexed": len(rag_service.documents),
+        "total_solutions": total_solutions,
+        "total_resolved_tickets": total_resolved_tickets,
+        "is_initialized": rag_service.is_initialized
+    }
+
+# ============================================
 # WEB INTERFACE
 # ============================================
 
@@ -475,36 +514,43 @@ async def index(request: Request):
 # WEBSOCKET FOR REAL-TIME UPDATES
 # ============================================
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except:
-                pass
-
-manager = ConnectionManager()
+from websocket_manager import manager
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
-    await manager.connect(websocket)
+    # Get user info from database
+    db = next(get_db())
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        await websocket.close(code=1008, reason="User not found")
+        return
+    
+    # Connect the user
+    await manager.connect(websocket, user_id, user.role.value)
+    
     try:
+        # Send welcome message
+        await manager.send_to_user(user_id, {
+            "type": "connection",
+            "message": f"Welcome {user.full_name}! You are connected.",
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Keep connection alive and listen for messages
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast(f"User {user_id}: {data}")
+            if data == "ping":
+                await websocket.send_text("pong")
+            else:
+                await manager.send_to_user(user_id, {
+                    "type": "echo",
+                    "message": data,
+                    "timestamp": datetime.now().isoformat()
+                })
     except Exception as e:
-        manager.disconnect(websocket)
+        print(f"WebSocket error for user {user_id}: {e}")
+    finally:
+        manager.disconnect(user_id, user.role.value)
 
 # ============================================
 # STARTUP EVENTS
@@ -513,10 +559,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 @app.on_event("startup")
 async def startup_event():
     print(f"🚀 Server started : {datetime.now()}")
-    # Initialize RAG with database
-    db = next(get_db())
-    rag_service.initialize(db)
-    print("✅ RAG service initialized")
+    # RAG initialization disabled to avoid Hugging Face download issues
+    # db = next(get_db())
+    # rag_service.initialize(db)
+    # print("✅ RAG service initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event():

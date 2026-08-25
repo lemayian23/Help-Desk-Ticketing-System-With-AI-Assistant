@@ -6,6 +6,7 @@
     <title>IT Helpdesk System</title>
     <script src="{{ url_for('static', path='ws.js') }}"></script>
     <style>
+        /* All styles remain unchanged from the previous version */
         * {
             margin: 0;
             padding: 0;
@@ -390,6 +391,27 @@
         let token = localStorage.getItem('token');
         let userId = localStorage.getItem('userId');
 
+        // Helper function to extract error message from FastAPI response
+        function getErrorMessage(data) {
+            // If detail is an array (validation errors), extract messages
+            if (Array.isArray(data.detail)) {
+                return data.detail.map(err => {
+                    const field = err.loc ? err.loc.join('.') : 'unknown';
+                    return `${field}: ${err.msg}`;
+                }).join('; ');
+            }
+            // If detail is a string
+            if (typeof data.detail === 'string') {
+                return data.detail;
+            }
+            // If message exists
+            if (typeof data.message === 'string') {
+                return data.message;
+            }
+            // Fallback
+            return 'An error occurred. Please try again.';
+        }
+
         // Initialize
         if (token) {
             document.getElementById('loginForm').classList.add('hidden');
@@ -421,6 +443,7 @@
             const phone = document.getElementById('regPhone').value.trim();
             const password = document.getElementById('regPassword').value;
 
+            // Validate
             if (!name || !email || !password) {
                 showMessage('Please fill in all required fields (Name, Email, Password)');
                 return;
@@ -432,17 +455,34 @@
             }
 
             try {
+                console.log('Sending registration request...');
+
                 const response = await fetch('/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email,
+                        email: email,
                         full_name: name,
-                        password,
-                        department,
-                        phone
+                        password: password,
+                        department: department || '',
+                        phone: phone || ''
                     })
                 });
+
+                console.log('Response status:', response.status);
+
+                // Parse response
+                let data;
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse response:', parseError);
+                    showMessage('Server error: Invalid response format', 'error');
+                    return;
+                }
 
                 if (response.ok) {
                     showMessage('Registration successful! Please login.', 'success');
@@ -450,11 +490,13 @@
                     document.getElementById('loginEmail').value = email;
                     document.getElementById('loginPassword').value = '';
                 } else {
-                    const data = await response.json();
-                    showMessage(data.detail || 'Registration failed');
+                    // Use helper to get readable error message
+                    const errorMsg = getErrorMessage(data);
+                    showMessage(errorMsg, 'error');
                 }
             } catch (error) {
-                showMessage('Network error. Please try again.');
+                console.error('Registration error:', error);
+                showMessage('Network error. Please check your connection and try again.', 'error');
             }
         }
 
@@ -473,14 +515,30 @@
                 formData.append('username', email);
                 formData.append('password', password);
 
+                console.log('Attempting login for:', email);
+
                 const response = await fetch('/token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: formData
                 });
 
+                console.log('Login response status:', response.status);
+
+                // Parse response
+                let data;
+                const responseText = await response.text();
+                console.log('Raw login response:', responseText);
+
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('Failed to parse login response:', parseError);
+                    showMessage('Server error: Invalid response format', 'error');
+                    return;
+                }
+
                 if (response.ok) {
-                    const data = await response.json();
                     token = data.access_token;
                     userId = data.user_id;
                     localStorage.setItem('token', token);
@@ -491,11 +549,18 @@
                     showMessage('Login successful!', 'success');
                     loadUserInfo();
                     loadTickets();
+
+                    // Connect WebSocket if available
+                    if (typeof connectWebSocket === 'function') {
+                        connectWebSocket(userId, token);
+                    }
                 } else {
-                    showMessage('Invalid email or password');
+                    const errorMsg = typeof data.detail === 'string' ? data.detail : 'Invalid email or password';
+                    showMessage(errorMsg, 'error');
                 }
             } catch (error) {
-                showMessage('Network error. Please try again.');
+                console.error('Login error:', error);
+                showMessage('Network error. Please try again.', 'error');
             }
         }
 
@@ -556,10 +621,11 @@
                     loadTickets();
                 } else {
                     const data = await response.json();
-                    showMessage(data.detail || 'Failed to submit ticket');
+                    const errorMsg = getErrorMessage(data);
+                    showMessage(errorMsg, 'error');
                 }
             } catch (error) {
-                showMessage('Network error. Please try again.');
+                showMessage('Network error. Please try again.', 'error');
             }
         }
 
@@ -654,7 +720,9 @@
                     
                     addChatMessage(aiMessage, 'ai');
                 } else {
-                    addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+                    const data = await response.json();
+                    const errorMsg = getErrorMessage(data);
+                    addChatMessage(`Error: ${errorMsg}`, 'ai');
                 }
             } catch (error) {
                 addChatMessage('Network error. Please check your connection.', 'ai');
@@ -685,6 +753,10 @@
                     setTimeout(() => {
                         document.getElementById('aiStatusText').textContent = 'Ready';
                     }, 3000);
+                } else {
+                    const data = await response.json();
+                    const errorMsg = getErrorMessage(data);
+                    showMessage(`Refresh failed: ${errorMsg}`, 'error');
                 }
             } catch (error) {
                 showMessage('Failed to refresh AI knowledge.', 'error');

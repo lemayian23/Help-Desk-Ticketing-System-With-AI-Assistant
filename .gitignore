@@ -1,5 +1,5 @@
 # ============================================
-# ENVIRONMENT & SECRETS
+# ENVIRONMENT & SECRETS (MOST IMPORTANT!)
 # ============================================
 .env
 .env.local
@@ -12,6 +12,8 @@
 secrets.yaml
 secrets.yml
 config/secrets.yml
+.env.production
+.env.staging
 
 # ============================================
 # PYTHON CACHE & COMPILED FILES
@@ -24,6 +26,13 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
 
 # ============================================
 # VIRTUAL ENVIRONMENT
@@ -31,12 +40,31 @@ __pycache__/
 venv/
 env/
 ENV/
-.venv
-.virtualenv
+.venv/
+.virtualenv/
 virtualenv/
 pythonenv*
 pyenv/
 .venv/
+
+# ============================================
+# AI AGENTS & TOOLS (Neon, Claude, Cursor, Codex, etc.)
+# ============================================
+.agents/
+.agent/
+.claude/
+.cursor/
+.gemini/
+.copilot/
+.antigravity/
+.cline/
+skills-lock.json
+.skills/
+.mcp/
+.neon/
+.anthropic/
+.openai/
+.huggingface/
 
 # ============================================
 # IDE & EDITOR FILES
@@ -55,21 +83,11 @@ pyenv/
 *.user
 *.userosscache
 *.sln.docstates
-
-# ============================================
-# AI AGENTS & TOOLS
-# ============================================
-.agents/
-.agent/
-.claude/
-.cursor/
-.gemini/
-.copilot/
-.antigravity/
-.cline/
-skills-lock.json
-.skills/
-.mcp/
+.vim/
+.vimrc
+.emacs.d/
+.sublime-project
+.sublime-workspace
 
 # ============================================
 # DATABASE & MIGRATIONS
@@ -80,6 +98,7 @@ skills-lock.json
 *.db-journal
 migrations/versions/*.pyc
 alembic/versions/*.pyc
+*.sqlite-journal
 
 # ============================================
 # LOGS & TEMPORARY FILES
@@ -93,21 +112,21 @@ temp/
 *.pid
 *.seed
 *.pid.lock
+*.out
+*.bak
+*.orig
+*.old
 
 # ============================================
-# PACKAGE MANAGERS
+# TESTING & COVERAGE
 # ============================================
-*.egg-info/
-*.egg
-dist/
-build/
-.eggs/
-pip-log.txt
-pip-delete-this-directory.txt
 .pytest_cache/
 .coverage
-htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
 .tox/
+htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
@@ -121,6 +140,11 @@ Desktop.ini
 ehthumbs.db
 *.exe
 *.dll
+*.dylib
+*.so
+*.bin
+*.msi
+*.bat
 
 # ============================================
 # DEPLOYMENT
@@ -132,28 +156,17 @@ ehthumbs.db
 .heroku/
 *.env.production
 *.env.staging
+Dockerfile
+docker-compose.yml
+.dockerignore
 
 # ============================================
-# LOCAL CONFIGURATION (Keep templates, ignore actual configs)
+# STATIC & BUILD FILES
 # ============================================
-config.local.yaml
-config.local.yml
-.local/
-.settings/
-
-# ============================================
-# TESTING
-# ============================================
-.pytest_cache/
-.coverage
-coverage.xml
-*.cover
-.hypothesis/
-.tox/
-
-# ============================================
-# NODE MODULES (if using Next.js later)
-# ============================================
+static/dist/
+static/assets/
+*.min.css
+*.min.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -163,18 +176,31 @@ yarn.lock
 pnpm-lock.yaml
 
 # ============================================
-# STATIC FILES (Generated)
+# LOCAL CONFIGURATION
 # ============================================
-static/dist/
-static/assets/
-*.min.css
-*.min.js
+config.local.yaml
+config.local.yml
+.local/
+.settings/
+.localenv
+*.local.py
+*.local.json
+*.local.yaml
+
+# ============================================
+# JUPYTER NOTEBOOKS
+# ============================================
+.ipynb_checkpoints/
+*.ipynb
 
 # ============================================
 # MISC
 # ============================================
-*.bak
+*.backup
 *.orig
-*.old
-*.out
+*.rej
+*.patch
+*.diff
 *.swp
+*.swo
+*~
