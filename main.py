@@ -9,6 +9,7 @@ from typing import List
 import json
 import os
 from dotenv import load_dotenv
+from rag_service import rag_service
 
 # Load environment variables
 load_dotenv()
@@ -427,6 +428,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 @app.on_event("startup")
 async def startup_event():
     print(f"🚀 Server started : {datetime.now()}")
+    # Initialize RAG with database
+    db = next(get_db())
+    rag_service.initialize(db)
+    print("✅ RAG service initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event():
