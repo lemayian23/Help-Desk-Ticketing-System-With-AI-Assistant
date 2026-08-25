@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Helpdesk System</title>
+    <script src="{{ url_for('static', path='ws.js') }}"></script>
     <style>
         * {
             margin: 0;
@@ -202,66 +203,67 @@
 
         /* AI Chat Styles */
         .chat-container {
-         background: #f7fafc;
-         border-radius: 8px;
-         padding: 15px;
-         margin-top: 20px;
-         border: 1px solid #e2e8f0;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #e2e8f0;
         }
         .chat-messages {
-         max-height: 300px;
-         overflow-y: auto;
-         margin-bottom: 10px;
-         padding: 10px;
-         background: white;
-         border-radius: 8px;
-         border: 1px solid #e2e8f0;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
         }
         .chat-message {
-         padding: 8px 12px;
-         margin-bottom: 8px;
-         text-align: 8px;
-         max-width: 80%;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            max-width: 80%;
         }
         .chat-message.user {
-         background: #f0f4f8;
-         margin-left: auto;
-         text-align: right;
-         color: #2a69ac
+            background: #bee3f8;
+            margin-left: auto;
+            text-align: right;
+            color: #2a69ac;
         }
         .chat-message.ai {
-         background: #f0f4f8;
-         margin-right: auto;
-         color: #2d3748;
-         border-left: 3px solid #4299e1;
+            background: #f0f4f8;
+            margin-right: auto;
+            color: #2d3748;
+            border-left: 3px solid #4299e1;
         }
         .chat-message .source {
-         font-size: 11px;
-         color: #718096;
-         margin-top: 4px;
+            font-size: 11px;
+            color: #718096;
+            margin-top: 4px;
         }
         .chat-input-row {
-         display: flex;
-         gap: 10px;
+            display: flex;
+            gap: 10px;
         }
         .chat-input-row input {
-         flex: 1;
+            flex: 1;
         }
         .chat-input-row button {
-         width: auto;
-         padding: 12px 24px;
+            width: auto;
+            padding: 12px 24px;
         }
         .ai-status {
-         color: #718096;
-         margin-bottom: 8px;
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 8px;
         }
         .typing-indicator {
-         color: #718096;
-         font-style: italic;
-         padding: 8px 12px;
-         background: #f0f4f8;
-         border-radius: 8px;
-         display: none;
+            color: #718096;
+            font-style: italic;
+            padding: 8px 12px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            display: none;
         }
     </style>
 </head>
@@ -362,23 +364,24 @@
                     <p class="loading">Loading tickets...</p>
                 </div>
             </div>
+
             <!-- AI Assistant -->
-             <div class=""chat-container">
-               <h3 style=""margin-bottom: 15px; color: #2d3748;">🤖 AI Assistant</h3>
-               <div class="ai-status">
-                  <span id="aiStatus">Status: <span id="aiStatusText">Ready</span></span>
-                  <button onClick="refreshAI()" style=""background: #48bb78; color: white; border:none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;">Refresh Knowledge</button>
-                  </div>
-                  <div id="chatMessages" class=""chat-message">
-                  <div class="chat-message ai">
-                     👋 Hello! I'm your AI assistant. I can help you with IT issues based on past solutions. Ask me anything!
-                  </div>
-               </div>
-               <div id="typingIndicator"class="typing-indicator">🤔 AI is thinking...</div>
-               <div class=""chat-input-row">
-                  <input type="text" id="chatInput" placeHolder="Ask me about IT issues..."onkeypress="if(event.key=='Enter') sendChatMessage()">
-                  <button class="btn" onclick="sendChatMessage()" style="width auto; padding: 12px 24px;">Ask AI</button>
-               </div>
+            <div class="chat-container">
+                <h3 style="margin-bottom: 15px; color: #2d3748;">🤖 AI Assistant</h3>
+                <div class="ai-status">
+                    <span id="aiStatus">Status: <span id="aiStatusText">Ready</span></span>
+                    <button onclick="refreshAI()" style="background: #48bb78; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;">Refresh Knowledge</button>
+                </div>
+                <div id="chatMessages" class="chat-messages">
+                    <div class="chat-message ai">
+                        👋 Hello! I'm your AI assistant. I can help you with IT issues based on past solutions. Ask me anything!
+                    </div>
+                </div>
+                <div id="typingIndicator" class="typing-indicator">🤔 AI is thinking...</div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="Ask me about IT issues..." onkeypress="if(event.key=='Enter') sendChatMessage()">
+                    <button class="btn" onclick="sendChatMessage()" style="width: auto; padding: 12px 24px;">Ask AI</button>
+                </div>
             </div>
         </div>
     </div>
@@ -614,79 +617,79 @@
             if (token) loadTickets();
         }, 30000);
 
-// ============================================
-// AI CHAT FUNCTIONS
-// ============================================
+        // ============================================
+        // AI CHAT FUNCTIONS
+        // ============================================
 
-async function sendChatMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    // Add user message
-    addChatMessage(message, 'user');
-    input.value = '';
-    
-    // Show typing indicator
-    document.getElementById('typingIndicator').style.display = 'block';
-    document.getElementById('aiStatusText').textContent = 'Thinking...';
-    
-    try {
-        const response = await fetch(`/ai/ask?question=${encodeURIComponent(message)}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            let aiMessage = data.answer;
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
             
-            // Add sources if available
-            if (data.sources && data.sources.length > 0) {
-                aiMessage += '\n\n📚 **Sources:**';
-                data.sources.forEach((source, i) => {
-                    aiMessage += `\n${i+1}. ${source.title} (${source.category})`;
+            if (!message) return;
+            
+            // Add user message
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            document.getElementById('typingIndicator').style.display = 'block';
+            document.getElementById('aiStatusText').textContent = 'Thinking...';
+            
+            try {
+                const response = await fetch(`/ai/ask?question=${encodeURIComponent(message)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    let aiMessage = data.answer;
+                    
+                    // Add sources if available
+                    if (data.sources && data.sources.length > 0) {
+                        aiMessage += '\n\n📚 **Sources:**';
+                        data.sources.forEach((source, i) => {
+                            aiMessage += `\n${i+1}. ${source.title} (${source.category})`;
+                        });
+                    }
+                    
+                    addChatMessage(aiMessage, 'ai');
+                } else {
+                    addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+                }
+            } catch (error) {
+                addChatMessage('Network error. Please check your connection.', 'ai');
             }
             
-            addChatMessage(aiMessage, 'ai');
-        } else {
-            addChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+            document.getElementById('typingIndicator').style.display = 'none';
+            document.getElementById('aiStatusText').textContent = 'Ready';
         }
-    } catch (error) {
-        addChatMessage('Network error. Please check your connection.', 'ai');
-    }
-    
-    document.getElementById('typingIndicator').style.display = 'none';
-    document.getElementById('aiStatusText').textContent = 'Ready';
-}
 
-function addChatMessage(text, type) {
-    const container = document.getElementById('chatMessages');
-    const div = document.createElement('div');
-    div.className = `chat-message ${type}`;
-    div.innerHTML = text.replace(/\n/g, '<br>');
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-}
-
-async function refreshAI() {
-    try {
-        const response = await fetch('/ai/refresh', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-            document.getElementById('aiStatusText').textContent = 'Refreshed ✅';
-            showMessage('AI knowledge refreshed successfully!', 'success');
-            setTimeout(() => {
-                document.getElementById('aiStatusText').textContent = 'Ready';
-            }, 3000);
+        function addChatMessage(text, type) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = `chat-message ${type}`;
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
         }
-    } catch (error) {
-        showMessage('Failed to refresh AI knowledge.', 'error');
-    }
-}
+
+        async function refreshAI() {
+            try {
+                const response = await fetch('/ai/refresh', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    document.getElementById('aiStatusText').textContent = 'Refreshed ✅';
+                    showMessage('AI knowledge refreshed successfully!', 'success');
+                    setTimeout(() => {
+                        document.getElementById('aiStatusText').textContent = 'Ready';
+                    }, 3000);
+                }
+            } catch (error) {
+                showMessage('Failed to refresh AI knowledge.', 'error');
+            }
+        }
     </script>
 </body>
 </html>
