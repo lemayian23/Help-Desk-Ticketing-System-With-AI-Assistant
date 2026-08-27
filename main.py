@@ -10,6 +10,7 @@ import json
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from jose import jwt  # ✅ CORRECT IMPORT
 
 # Load environment variables
 load_dotenv()
@@ -469,7 +470,7 @@ async def index(request: Request):
 # ============================================
 
 from websocket_manager import manager
-import jwt
+# ❌ REMOVED the duplicate `import jwt` – we already have `from jose import jwt` at the top
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
