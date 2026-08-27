@@ -27,10 +27,13 @@ def get_db():
         db.close()
 
 def verify_password(plain_password, hashed_password):
+    # Truncate to 72 bytes for bcrypt
+    if len(plain_password) > 72:
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    # Bcrypt has a 72-byte limit - truncate if needed
+    # Truncate to 72 bytes for bcrypt
     if len(password) > 72:
         password = password[:72]
     return pwd_context.hash(password)
@@ -42,7 +45,7 @@ def authenticate_user(db: Session, email: str, password: str):
     user = get_user(db, email)
     if not user:
         return False
-    # Bcrypt has a 72-byte limit - truncate if needed for verification too
+    # Truncate to 72 bytes for bcrypt
     if len(password) > 72:
         password = password[:72]
     if not verify_password(password, user.hashed_password):
