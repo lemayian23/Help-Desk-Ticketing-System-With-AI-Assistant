@@ -113,6 +113,19 @@ async def register(
     db.commit()
     db.refresh(new_user)
 
+    # Truncate password to 72 chars for bcrypt
+    password = user_data.password[:72] if len(user_data.password) > 72 else user_data.password
+    hashed_password = get_password_hash(password)
+
+    new_user = User(
+        email=user_data.email,
+        full_name=user_data.full_name,
+        department=user_data.department,
+        phone=user_data.phone,
+        hashed_password=hashed_password,
+        role=UserRole.STAFF
+    )
+
     # Log the action
     audit_log = AuditLog(
         user_id=new_user.id,
