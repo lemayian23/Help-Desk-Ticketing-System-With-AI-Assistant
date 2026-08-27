@@ -10,7 +10,7 @@ import json
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from jose import jwt  # ✅ CORRECT IMPORT
+from jose import jwt
 
 # Load environment variables
 load_dotenv()
@@ -99,8 +99,11 @@ async def register(
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
+    # ✅ FIX: Truncate password to 72 characters for bcrypt (bcrypt has 72-byte limit)
+    password = user_data.password[:72] if len(user_data.password) > 72 else user_data.password
+
     # Create new user
-    hashed_password = get_password_hash(user_data.password)
+    hashed_password = get_password_hash(password)
     new_user = User(
         email=user_data.email,
         full_name=user_data.full_name,
@@ -112,19 +115,6 @@ async def register(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
-    # Truncate password to 72 chars for bcrypt
-    password = user_data.password[:72] if len(user_data.password) > 72 else user_data.password
-    hashed_password = get_password_hash(password)
-
-    new_user = User(
-        email=user_data.email,
-        full_name=user_data.full_name,
-        department=user_data.department,
-        phone=user_data.phone,
-        hashed_password=hashed_password,
-        role=UserRole.STAFF
-    )
 
     # Log the action
     audit_log = AuditLog(
@@ -483,7 +473,6 @@ async def index(request: Request):
 # ============================================
 
 from websocket_manager import manager
-# ❌ REMOVED the duplicate `import jwt` – we already have `from jose import jwt` at the top
 
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
