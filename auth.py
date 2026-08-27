@@ -9,21 +9,16 @@ from database import SessionLocal, User
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
-# Password hashing
+# Password hashing with bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Database dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -31,14 +26,15 @@ def get_db():
     finally:
         db.close()
 
-# Password functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # Bcrypt has a 72-byte limit - truncate if needed
+    if len(password) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
-# User functions
 def get_user(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()
 
@@ -46,11 +42,13 @@ def authenticate_user(db: Session, email: str, password: str):
     user = get_user(db, email)
     if not user:
         return False
+    # Bcrypt has a 72-byte limit - truncate if needed for verification too
+    if len(password) > 72:
+        password = password[:72]
     if not verify_password(password, user.hashed_password):
         return False
     return user
 
-# Token functions
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -61,7 +59,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# Get current user from token
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,7 +77,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
-# Role-based access control
 def require_role(allowed_roles: list):
     async def role_checker(current_user: User = Depends(get_current_user)):
         if current_user.role not in allowed_roles:
