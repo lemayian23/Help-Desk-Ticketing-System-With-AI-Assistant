@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -11,13 +11,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", "10625")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
+# Database dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -25,38 +27,62 @@ def get_db():
     finally:
         db.close()
 
-def _truncate_password_bytes(password: str) -> str:
+
+# ============================================
+# PASSWORD HASHING — direct bcrypt, no passlib
+# ============================================
+
+def _prepare_password_bytes(password: str) -> bytes:
     """
-    Bcrypt has a 72-BYTE limit (not 72 characters). Truncate on the
-    encoded bytes so multi-byte UTF-8 chars can't push it over the
-    limit after a naive [:72] character slice.
+    Encode to UTF-8 and truncate to bcrypt's 72-byte limit,
+    without splitting a multi-byte character in half.
     """
     password_bytes = password.encode("utf-8")
     if len(password_bytes) > 72:
         password_bytes = password_bytes[:72]
-        # avoid cutting a multi-byte char in half at the boundary
-        password = password_bytes.decode("utf-8", errors="ignore")
-    return password
+        # decode-with-ignore then re-encode strips any partial
+        # trailing multi-byte char left dangling by the raw slice
+        password_bytes = password_bytes.decode("utf-8", errors="ignore").encode("utf-8")
+    return password_bytes
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    plain_password = _truncate_password_bytes(plain_password)
-    return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
-    password = _truncate_password_bytes(password)
-    return pwd_context.hash(password)
+    password_bytes = _prepare_password_bytes(password)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode("utf-8")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    password_bytes = _prepare_password_bytes(plain_password)
+    hashed_bytes = hashed_password.encode("utf-8")
+    try:
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except ValueError:
+        # malformed/legacy hash in DB — treat as failed auth, not a 500
+        return False
+
+
+# ============================================
+# USER FUNCTIONS
+# ============================================
 
 def get_user(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()
+
 
 def authenticate_user(db: Session, email: str, password: str):
     user = get_user(db, email)
     if not user:
         return False
-    password = _truncate_password_bytes(password)
     if not verify_password(password, user.hashed_password):
         return False
     return user
+
+
+# ============================================
+# TOKEN FUNCTIONS
+# ============================================
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -67,6 +93,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -86,6 +113,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+
+# Role-based access control
 def require_role(allowed_roles: list):
     async def role_checker(current_user: User = Depends(get_current_user)):
         if current_user.role not in allowed_roles:
