@@ -99,7 +99,7 @@ async def register(
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # ✅ FIX: Truncate password to 72 characters for bcrypt (bcrypt has 72-byte limit)
+    # ✅ FIX: Truncate password to 72 characters for bcrypt
     password = user_data.password[:72] if len(user_data.password) > 72 else user_data.password
 
     # Create new user
@@ -373,7 +373,7 @@ async def get_users(
     ]
 
 # ============================================
-# AI / RAG ENDPOINTS (Gracefully disabled if RAG not available)
+# AI / RAG ENDPOINTS
 # ============================================
 
 @app.get("/ai/ask")
