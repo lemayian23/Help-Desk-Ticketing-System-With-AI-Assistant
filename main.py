@@ -99,8 +99,8 @@ async def register(
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Truncate password to 72 characters for bcrypt
-    password = user_data.password[:72] if len(user_data.password) > 72 else user_data.password
+    # Truncation now handled inside get_passowrd_hash()
+    hashed_password = get_password_hash(user_data.password)
 
     # Create new user
     hashed_password = get_password_hash(password)
